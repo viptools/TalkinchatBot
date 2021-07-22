@@ -15,6 +15,7 @@ const TARGET_ROLE_MEMBER: string = "member";
 const TARGET_ROLE_KICK: string = "kick";
 const CHANGE_ROLE: string = "change_role";
 
+
 enum MESSAGE_TYPE{
     TEXT = "text",
     IMAGE = "image"
