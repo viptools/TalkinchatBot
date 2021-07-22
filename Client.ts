@@ -1,10 +1,24 @@
-import { parse } from 'path/posix';
 import WebSocket =  require('ws');
-const request = require('request');
 import * as yt from 'youtube-search-without-api-key';
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
-const headers = {'User-Agent': USER_AGENT}
+const BOT_ID: string = "Bot Id";
+const BOT_PASSWORD: string = "Password";
+
+const HANDLER_LOGIN: string = "login";
+const HANDLER_LOGIN_EVENT: string = "login_event";
+const HANDLER_ROOM_JOIN: string = "room_join";
+const HANDLER_ROOM_EVENT: string = "room_event";
+const HANDLER_ROOM_ADMIN: string = "room_admin";
+const HANDLER_ROOM_MESSAGE: string = "room_message";
+const HANDLER_PROFILE_OTHER: string = "profile_other";
+const TARGET_ROLE_MEMBER: string = "member";
+const TARGET_ROLE_KICK: string = "kick";
+const CHANGE_ROLE: string = "change_role";
+
+enum MESSAGE_TYPE{
+    TEXT = "text",
+    IMAGE = "image"
+}
 
 export class Client{
 
@@ -12,9 +26,13 @@ export class Client{
     public webSocket: WebSocket = null;
     public userName: string = "";
     public passWord: string = "";
-    public roomName: string = "american";
+    public roomName: string = "american";       // change this ==> eg. american
     public tempRoom: string = "";
     public isOnlyPhoto: boolean = false;
+    // Bot Master ID
+    public botMasterId: string = "docker";      // change this ==> eg. docker
+
+    // you can add more list of spins
     public listEmojis = [
         'You got 🐠😾',
         'You are sweet 😍',
@@ -62,13 +80,19 @@ export class Client{
         this.webSocket.addEventListener("message", this._onMsg.bind(this));
     }
 
+    intervalFunc() {
+        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+            this.webSocket.send("");    // blank msgs
+        }
+    }
+
     _log(...msg) {
         console.warn("[DBH4CK LOG]", ...msg);
      }
 
     _onClose(close){
+        //clearInterval(this);
         this._log("ws: Socket closed");
-        //new Client("imchampagnepapi", "qwerty-007");
     }
 
     _onPing(ping){
@@ -93,14 +117,16 @@ export class Client{
         }
     }
 
+    
     _handleParsedData(parsedData){
-        if(parsedData.handler == "login_event"){
+        if(parsedData.handler == HANDLER_LOGIN_EVENT){
             if(parsedData.type == "success"){
+                setInterval(this.intervalFunc, 45000);
                 this.joinRoom(this.roomName);
             }
         }
 
-        if(parsedData.handler == "room_event"){
+        if(parsedData.handler == HANDLER_ROOM_EVENT){
             if(parsedData.type == "text"){
                 var from = parsedData.from;
                 var message = parsedData.body;
@@ -118,7 +144,7 @@ export class Client{
             }
         }
 
-        if(parsedData.handler == "profile_other"){
+        if(parsedData.handler == HANDLER_PROFILE_OTHER){
             var userId = parsedData.user_id;
             var userName = parsedData.type;
             var gender = parsedData.gender;
@@ -185,8 +211,9 @@ export class Client{
         console.log(from + " : " + message);
 
         if(from == this.userName){
-            //this.sendRoomMsg(this.roomName, message);
+            
         }
+        // Youtube Scrapping :D
         if (message.indexOf('!yt ') === 0){
             var search = message.substring(4).toString();
             console.log('Fetching YT for: "' + search.replace(/\s/g, "") + '"');
@@ -196,63 +223,69 @@ export class Client{
             this.sendRoomMsg(room, videos[0].url);
         }
 
+        // SPIN 
         if (message.indexOf('.s') === 0 || message.indexOf('.S') === 0 || message.indexOf('spin') === 0){
             const random = Math.floor(Math.random() * this.listEmojis.length);
             this.sendRoomMsg(room, from + ": " + this.listEmojis[random]);
         }
 
+        // Profile
         if(message.indexOf('!pro ') === 0){
             
             var search = message.substring(5).toString();
             var targetId = search.replace(/\s/g, "");
             this.tempRoom = room;
-            if(from == "docker"){
+            if(from == this.botMasterId){
                 this.isOnlyPhoto = false;
                 this.fetchUserProfile(targetId, room);
             }
         }
 
+        // Join Group
         if(message.indexOf('!join ') === 0){
             var str = message.substring(6).toString();
             var targetId = str.replace(/\s/g, "");
             
-            if(from == "docker"){
+            if(from == this.botMasterId){
                 this.joinRoom(targetId);
             }
         }
 
+        // Avatar Pic
         if(message.indexOf('!avi ') === 0){
             var str = message.substring(5).toString();
             var targetId = str.replace(/\s/g, "");
             this.tempRoom = room;
 
-            if(from == "docker"){
+            if(from == this.botMasterId){
                 this.isOnlyPhoto = true;
-                //this.joinRoom(targetId);
                 this.fetchUserProfile(targetId, room);
             }
-            //this.sendRoomMsg("american", "", "https://static.remove.bg/remove-bg-web/3661dd45c31a4ff23941855a7e4cedbbf6973643/assets/start-0e837dcc57769db2306d8d659f53555feb500b3c5d456879b9c843d1872e7baa.jpg");
+            //this.sendRoomMsg("american", "", "test.jpg");
         }
 
+        // Member User
         if(message.indexOf('m ') === 0){
             var str = message.substring(2).toString();
             var targetId = str.replace(/\s/g, "");
             this.tempRoom = room;
 
-            if(from == "docker"){
-                var memPayload = {handler: "room_admin", id: "qBCQa0luvhCJpBgQyqMc", type: "change_role", room: room, t_username: targetId, t_role: "member"};
+            if(from == this.botMasterId){
+                var memPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_MEMBER};
                 if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
                     this.webSocket.send(JSON.stringify(memPayload));
                 }
             }
         }
+
+        // Kick User
         if(message.indexOf('k ') === 0){
             var str = message.substring(2).toString();
             var targetId = str.replace(/\s/g, "");
             this.tempRoom = room;
 
-            if(from == "docker"){
-                var memPayload = {handler: "room_admin", id: "qBCQa0luvhCJpBgQyqMc", type: "change_role", room: room, t_username: targetId, t_role: "member"};
+            if(from == this.botMasterId){
+                var memPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_KICK};
                 if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
                     this.webSocket.send(JSON.stringify(memPayload));
                 }
@@ -263,7 +296,7 @@ export class Client{
 
 
     fetchUserProfile(targetId, room){
-        var userSearchPayload = {handler: "profile_other", id: "qBCQa0luvhCJpBgQyqMc", type: targetId};
+        var userSearchPayload = {handler: HANDLER_PROFILE_OTHER, id: this.keyGen(20, true), type: targetId};
         
         if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
             this.webSocket.send(JSON.stringify(userSearchPayload));
@@ -271,7 +304,7 @@ export class Client{
     }
 
     public joinRoom(roomName){
-        var groupJoinPayload = {handler: "room_join", id: "qBCQa0luvhCJpBgQyqMc", name: roomName};
+        var groupJoinPayload = {handler: HANDLER_ROOM_JOIN, id: this.keyGen(20), name: roomName};
 
         if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
             this.webSocket.send(JSON.stringify(groupJoinPayload));
@@ -279,7 +312,7 @@ export class Client{
     }
 
     public login(){
-        var loginPayload = {handler: "login", id: "qBCQa0luvhCJpAgQyqMc", username: this.userName, password: this.passWord};
+        var loginPayload = {handler: HANDLER_LOGIN, id: this.keyGen(20), username: this.userName, password: this.passWord};
         
         if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
             this.webSocket.send(JSON.stringify(loginPayload));
@@ -305,7 +338,7 @@ export class Client{
         info+= "-"          // -
         info+= "Google"     // Manufacturer
         info+= "-"          // - 
-        info+= "Nokia"      // BrandName
+        info+= "Pixel"      // Model
         info+= "-"          // -
         info+= "30"         // Sdk Api
         return info
@@ -315,10 +348,10 @@ export class Client{
         let groupMsgPayload = null;
 
         if(photoUrl){
-            groupMsgPayload = {handler: "room_message", id: this.keyGen(20, true), room: roomName, type: "image", url: photoUrl, body: "", length: ""};
+            groupMsgPayload = {handler: HANDLER_ROOM_MESSAGE, id: this.keyGen(20, true), room: roomName, type: MESSAGE_TYPE.IMAGE, url: photoUrl, body: "", length: ""};
         }
         else{
-            groupMsgPayload = {handler: "room_message", id: this.keyGen(20, true), room: roomName, type: "text", url: "", body: msg, length: ""};
+            groupMsgPayload = {handler: HANDLER_ROOM_MESSAGE, id: this.keyGen(20, true), room: roomName, type: MESSAGE_TYPE.TEXT, url: "", body: msg, length: ""};
         }
 
         if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
@@ -328,21 +361,6 @@ export class Client{
     
 }
 
-async function renderHTML(text){
-    var rawText = text;
-    var urlRegex =/(\b(http|https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;   
-    var urlList = [];
-    
-    await rawText.replace(urlRegex, function(url) {
-      // check if url ends with .jpg, .png, .jpeg, .bmp
-      if ((url.indexOf(".jpg") > 0) || (url.indexOf(".png") > 0) || (url.indexOf(".jpeg") > 0) || (url.indexOf(".bmp") > 0 )) {
-          urlList.push(url);
-        } else {}
-    });
-    
-    var imgUrl = urlList[Math.floor(Math.random() * urlList.length)];
-    console.log(imgUrl);
-    return imgUrl;
-  } 
+// Created by docker aka db~@NC - B'cuz we share :P
 
-new Client("ytbot", "qwerty-007");
+new Client(BOT_ID, BOT_PASSWORD);
