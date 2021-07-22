@@ -1,5 +1,8 @@
 # TalkinchatBot
 A Simple TypeScript to connect TalkinChat Group Bot using WebSocket
+- RUN Cmds: Please define the username and password for the bot in Client.ts file and execute below cmds step-wise: 
+- tsc Client.ts
+- node Client.js
 
 # Features:
 
