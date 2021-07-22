@@ -4,6 +4,13 @@ A Simple TypeScript to connect TalkinChat Group Bot using WebSocket
 - tsc Client.ts
 - node Client.js
 
+# Requirements
+- OS (Windows, Mac, Linux, Android, or any)
+- NodeJs Installed
+- Typescript Installed
+- Dependencies (ws, youtube-search-without-api-key)
+- Note: In order to run this NodeJs Bot from Android Device, you must install Termux from F-Droid.
+
 # Features:
 
 - Login using websocket
