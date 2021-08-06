@@ -19,12 +19,17 @@ A Simple TypeScript to connect TalkinChat Group Bot using WebSocket
 - User Profile Search
 - Send User Profile Image in Group
 - Welcome & Spin Bot
+- Admin, Member, Ban, Owner, None User in Group.
 
 
 # List of Cmds:
 - .s    -  SPIN the Bot
 - m ID  -  Member ID
 - k ID  -  Kick ID
+- o ID  -  Owner ID
+- a ID  -  Admin ID
+- n ID  -  None ID
+- b ID  -  Ban ID
 - !yt keyword  -  Find relevant youtube video link
 - !avi userId  -  Fetch User Avatar Pic
 - !pro userId  -  Fetch User Profile
