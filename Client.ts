@@ -1,8 +1,8 @@
 import WebSocket =  require('ws');
 import * as yt from 'youtube-search-without-api-key';
 
-const BOT_ID: string = "botcoder";
-const BOT_PASSWORD: string = "qwerty-007+17";
+const BOT_ID: string = "Bot ID";
+const BOT_PASSWORD: string = "Bot Pwd";
 
 const HANDLER_LOGIN: string = "login";
 const HANDLER_LOGIN_EVENT: string = "login_event";
