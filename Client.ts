@@ -1,7 +1,7 @@
 import WebSocket =  require('ws');
 import * as yt from 'youtube-search-without-api-key';
 
-const BOT_ID: string = "Bot ID";
+const BOT_ID: string = "Bot Id";
 const BOT_PASSWORD: string = "Bot Pwd";
 
 const HANDLER_LOGIN: string = "login";
@@ -13,6 +13,10 @@ const HANDLER_ROOM_MESSAGE: string = "room_message";
 const HANDLER_PROFILE_OTHER: string = "profile_other";
 const TARGET_ROLE_MEMBER: string = "member";
 const TARGET_ROLE_KICK: string = "kick";
+const TARGET_ROLE_OUTCAST: string = "outcast";
+const TARGET_ROLE_NONE: string = "none";
+const TARGET_ROLE_ADMIN: string = "admin";
+const TARGET_ROLE_OWNER: string = "owner";
 const CHANGE_ROLE: string = "change_role";
 
 const emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳",
@@ -145,6 +149,10 @@ export class Client{
                         this.webSocket.send(JSON.stringify(groupMsgPayload))
                     } //
                 }, 120000);
+            }
+            if(parsedData.type == "room_unsufficient_previlige"){
+                let room = parsedData.name;
+                this.sendRoomMsg(room, "Unsufficient Previlige.");
             }
         }
 
@@ -289,9 +297,61 @@ export class Client{
             this.tempRoom = room;
 
             if(from == this.botMasterId){
-                var memPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_KICK};
+                var kickPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: TARGET_ROLE_KICK, room: room, t_username: targetId, t_role: "none"};
                 if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-                    this.webSocket.send(JSON.stringify(memPayload));
+                    this.webSocket.send(JSON.stringify(kickPayload));
+                }
+            }
+        }
+
+        if(message.indexOf('b ') === 0){
+            var str = message.substring(2).toString();
+            var targetId = str.replace(/\s/g, "");
+            this.tempRoom = room;
+
+            if(from == this.botMasterId){
+                var outcastPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OUTCAST};
+                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+                    this.webSocket.send(JSON.stringify(outcastPayload));
+                }
+            }
+        }
+
+        if(message.indexOf('n ') === 0){
+            var str = message.substring(2).toString();
+            var targetId = str.replace(/\s/g, "");
+            this.tempRoom = room;
+
+            if(from == this.botMasterId){
+                var nonePayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_NONE};
+                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+                    this.webSocket.send(JSON.stringify(nonePayload));
+                }
+            }
+        }
+
+        if(message.indexOf('a ') === 0){
+            var str = message.substring(2).toString();
+            var targetId = str.replace(/\s/g, "");
+            this.tempRoom = room;
+
+            if(from == this.botMasterId){
+                var adminPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_ADMIN};
+                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+                    this.webSocket.send(JSON.stringify(adminPayload));
+                }
+            }
+        }
+
+        if(message.indexOf('o ') === 0){
+            var str = message.substring(2).toString();
+            var targetId = str.replace(/\s/g, "");
+            this.tempRoom = room;
+
+            if(from == this.botMasterId){
+                var ownerPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OWNER};
+                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+                    this.webSocket.send(JSON.stringify(ownerPayload));
                 }
             }
         }
