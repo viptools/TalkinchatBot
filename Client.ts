@@ -1,8 +1,8 @@
 import WebSocket =  require('ws');
 import * as yt from 'youtube-search-without-api-key';
 
-const BOT_ID: string = "Bot Id";
-const BOT_PASSWORD: string = "Password";
+const BOT_ID: string = "botcoder";
+const BOT_PASSWORD: string = "qwerty-007+17";
 
 const HANDLER_LOGIN: string = "login";
 const HANDLER_LOGIN_EVENT: string = "login_event";
@@ -15,6 +15,8 @@ const TARGET_ROLE_MEMBER: string = "member";
 const TARGET_ROLE_KICK: string = "kick";
 const CHANGE_ROLE: string = "change_role";
 
+const emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳",
+ "😨", "😤", "🤬", "☠", "👻", "🤡", "💌", "💤", "👍"];
 
 enum MESSAGE_TYPE{
     TEXT = "text",
@@ -81,12 +83,6 @@ export class Client{
         this.webSocket.addEventListener("message", this._onMsg.bind(this));
     }
 
-    intervalFunc() {
-        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-            this.webSocket.send("");    // blank msgs
-        }
-    }
-
     _log(...msg) {
         console.warn("[DBH4CK LOG]", ...msg);
      }
@@ -99,7 +95,7 @@ export class Client{
     _onPing(ping){
         this._log(ping);
         if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-            this.webSocket.send("PONG")
+            console.log("ping");
         }
     }
 
@@ -117,12 +113,10 @@ export class Client{
             this._handleParsedData(parsedData);
         }
     }
-
-    
+      
     _handleParsedData(parsedData){
         if(parsedData.handler == HANDLER_LOGIN_EVENT){
             if(parsedData.type == "success"){
-                setInterval(this.intervalFunc, 45000);
                 this.joinRoom(this.roomName);
             }
         }
@@ -142,6 +136,15 @@ export class Client{
                 var welcomeStr = "Welcome: " + user + " 😜";
                 //this.processGroupChatMessage(this.userName, welcomeStr, group);
                 this.sendRoomMsg(group, welcomeStr);
+            }
+            if(parsedData.type == "you_joined"){
+                //
+                setInterval(() => {    
+                    if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+                        let groupMsgPayload = {handler: HANDLER_ROOM_MESSAGE, id: this.keyGen(20, true), room: this.roomName, type: MESSAGE_TYPE.TEXT, url: "", body: get_random(emojis), length: ""};
+                        this.webSocket.send(JSON.stringify(groupMsgPayload))
+                    } //
+                }, 120000);
             }
         }
 
@@ -225,7 +228,7 @@ export class Client{
         }
 
         // SPIN 
-        if (message.indexOf('.s') === 0 || message.indexOf('.S') === 0 || message.indexOf('spin') === 0){
+        if (message.toLowerCase() == '.s' || message.toLowerCase() == 'spin' ){
             const random = Math.floor(Math.random() * this.listEmojis.length);
             this.sendRoomMsg(room, from + ": " + this.listEmojis[random]);
         }
@@ -362,6 +365,8 @@ export class Client{
     
 }
 
+function get_random (list) {
+    return list[Math.floor((Math.random()*list.length))];
+  }
 // Created by docker aka db~@NC - B'cuz we share :P
-
 new Client(BOT_ID, BOT_PASSWORD);

@@ -35,17 +35,18 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from) {
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-    return to;
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
 };
 exports.__esModule = true;
-exports.Client = void 0;
 var WebSocket = require("ws");
 var yt = require("youtube-search-without-api-key");
-var BOT_ID = "Bot Id";
-var BOT_PASSWORD = "Password";
+var BOT_ID = "botcoder";
+var BOT_PASSWORD = "qwerty-007+17";
 var HANDLER_LOGIN = "login";
 var HANDLER_LOGIN_EVENT = "login_event";
 var HANDLER_ROOM_JOIN = "room_join";
@@ -56,6 +57,8 @@ var HANDLER_PROFILE_OTHER = "profile_other";
 var TARGET_ROLE_MEMBER = "member";
 var TARGET_ROLE_KICK = "kick";
 var CHANGE_ROLE = "change_role";
+var emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳",
+    "😨", "😤", "🤬", "☠", "👻", "🤡", "💌", "💤", "👍"];
 var MESSAGE_TYPE;
 (function (MESSAGE_TYPE) {
     MESSAGE_TYPE["TEXT"] = "text";
@@ -116,17 +119,12 @@ var Client = /** @class */ (function () {
         this.webSocket.addEventListener("close", this._onClose.bind(this));
         this.webSocket.addEventListener("message", this._onMsg.bind(this));
     }
-    Client.prototype.intervalFunc = function () {
-        if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-            this.webSocket.send(""); // blank msgs
-        }
-    };
     Client.prototype._log = function () {
         var msg = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             msg[_i] = arguments[_i];
         }
-        console.warn.apply(console, __spreadArray(["[DBH4CK LOG]"], msg));
+        console.warn.apply(console, __spreadArrays(["[DBH4CK LOG]"], msg));
     };
     Client.prototype._onClose = function (close) {
         //clearInterval(this);
@@ -135,7 +133,7 @@ var Client = /** @class */ (function () {
     Client.prototype._onPing = function (ping) {
         this._log(ping);
         if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-            this.webSocket.send("PONG");
+            console.log("ping");
         }
     };
     Client.prototype._onOpen = function (open) {
@@ -150,9 +148,9 @@ var Client = /** @class */ (function () {
         }
     };
     Client.prototype._handleParsedData = function (parsedData) {
+        var _this = this;
         if (parsedData.handler == HANDLER_LOGIN_EVENT) {
             if (parsedData.type == "success") {
-                setInterval(this.intervalFunc, 45000);
                 this.joinRoom(this.roomName);
             }
         }
@@ -170,6 +168,15 @@ var Client = /** @class */ (function () {
                 var welcomeStr = "Welcome: " + user + " 😜";
                 //this.processGroupChatMessage(this.userName, welcomeStr, group);
                 this.sendRoomMsg(group, welcomeStr);
+            }
+            if (parsedData.type == "you_joined") {
+                //
+                setInterval(function () {
+                    if (_this.webSocket != null && _this.webSocket.readyState == WebSocket.OPEN) {
+                        var groupMsgPayload = { handler: HANDLER_ROOM_MESSAGE, id: _this.keyGen(20, true), room: _this.roomName, type: MESSAGE_TYPE.TEXT, url: "", body: get_random(emojis), length: "" };
+                        _this.webSocket.send(JSON.stringify(groupMsgPayload));
+                    } //
+                }, 120000);
             }
         }
         if (parsedData.handler == HANDLER_PROFILE_OTHER) {
@@ -260,7 +267,7 @@ var Client = /** @class */ (function () {
                         _a.label = 2;
                     case 2:
                         // SPIN 
-                        if (message.indexOf('.s') === 0 || message.indexOf('.S') === 0 || message.indexOf('spin') === 0) {
+                        if (message.toLowerCase() == '.s' || message.toLowerCase() == 'spin') {
                             random = Math.floor(Math.random() * this.listEmojis.length);
                             this.sendRoomMsg(room, from + ": " + this.listEmojis[random]);
                         }
@@ -377,5 +384,8 @@ var Client = /** @class */ (function () {
     return Client;
 }());
 exports.Client = Client;
+function get_random(list) {
+    return list[Math.floor((Math.random() * list.length))];
+}
 // Created by docker aka db~@NC - B'cuz we share :P
 new Client(BOT_ID, BOT_PASSWORD);
