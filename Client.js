@@ -56,6 +56,10 @@ var HANDLER_ROOM_MESSAGE = "room_message";
 var HANDLER_PROFILE_OTHER = "profile_other";
 var TARGET_ROLE_MEMBER = "member";
 var TARGET_ROLE_KICK = "kick";
+var TARGET_ROLE_OUTCAST = "outcast";
+var TARGET_ROLE_NONE = "none";
+var TARGET_ROLE_ADMIN = "admin";
+var TARGET_ROLE_OWNER = "owner";
 var CHANGE_ROLE = "change_role";
 var emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳",
     "😨", "😤", "🤬", "☠", "👻", "🤡", "💌", "💤", "👍"];
@@ -178,6 +182,10 @@ var Client = /** @class */ (function () {
                     } //
                 }, 120000);
             }
+            if (parsedData.type == "room_unsufficient_previlige") {
+                var room_1 = parsedData.name;
+                this.sendRoomMsg(room_1, "Unsufficient Previlige.");
+            }
         }
         if (parsedData.handler == HANDLER_PROFILE_OTHER) {
             var userId = parsedData.user_id;
@@ -249,7 +257,7 @@ var Client = /** @class */ (function () {
     };
     Client.prototype.processGroupChatMessage = function (from, message, room) {
         return __awaiter(this, void 0, void 0, function () {
-            var search, videos, random, search, targetId, str, targetId, str, targetId, str, targetId, memPayload, str, targetId, memPayload;
+            var search, videos, random, search, targetId, str, targetId, str, targetId, str, targetId, memPayload, str, targetId, kickPayload, str, targetId, outcastPayload, str, targetId, nonePayload, str, targetId, adminPayload, str, targetId, ownerPayload;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -318,9 +326,53 @@ var Client = /** @class */ (function () {
                             targetId = str.replace(/\s/g, "");
                             this.tempRoom = room;
                             if (from == this.botMasterId) {
-                                memPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_KICK };
+                                kickPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: TARGET_ROLE_KICK, room: room, t_username: targetId, t_role: "none" };
                                 if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-                                    this.webSocket.send(JSON.stringify(memPayload));
+                                    this.webSocket.send(JSON.stringify(kickPayload));
+                                }
+                            }
+                        }
+                        if (message.indexOf('b ') === 0) {
+                            str = message.substring(2).toString();
+                            targetId = str.replace(/\s/g, "");
+                            this.tempRoom = room;
+                            if (from == this.botMasterId) {
+                                outcastPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OUTCAST };
+                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+                                    this.webSocket.send(JSON.stringify(outcastPayload));
+                                }
+                            }
+                        }
+                        if (message.indexOf('n ') === 0) {
+                            str = message.substring(2).toString();
+                            targetId = str.replace(/\s/g, "");
+                            this.tempRoom = room;
+                            if (from == this.botMasterId) {
+                                nonePayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_NONE };
+                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+                                    this.webSocket.send(JSON.stringify(nonePayload));
+                                }
+                            }
+                        }
+                        if (message.indexOf('a ') === 0) {
+                            str = message.substring(2).toString();
+                            targetId = str.replace(/\s/g, "");
+                            this.tempRoom = room;
+                            if (from == this.botMasterId) {
+                                adminPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_ADMIN };
+                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+                                    this.webSocket.send(JSON.stringify(adminPayload));
+                                }
+                            }
+                        }
+                        if (message.indexOf('o ') === 0) {
+                            str = message.substring(2).toString();
+                            targetId = str.replace(/\s/g, "");
+                            this.tempRoom = room;
+                            if (from == this.botMasterId) {
+                                ownerPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OWNER };
+                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+                                    this.webSocket.send(JSON.stringify(ownerPayload));
                                 }
                             }
                         }
