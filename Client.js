@@ -35,18 +35,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArrays = (this && this.__spreadArrays) || function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
 };
 exports.__esModule = true;
+exports.Client = void 0;
 var WebSocket = require("ws");
 var yt = require("youtube-search-without-api-key");
-var BOT_ID = "Bot Id";
-var BOT_PASSWORD = "Bot Pwd";
+var BOT_ID = "Bot Id"; // change this
+var BOT_PASSWORD = "Bot Pwd"; // change this
 var HANDLER_LOGIN = "login";
 var HANDLER_LOGIN_EVENT = "login_event";
 var HANDLER_ROOM_JOIN = "room_join";
@@ -61,8 +60,9 @@ var TARGET_ROLE_NONE = "none";
 var TARGET_ROLE_ADMIN = "admin";
 var TARGET_ROLE_OWNER = "owner";
 var CHANGE_ROLE = "change_role";
-var emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳",
-    "😨", "😤", "🤬", "☠", "👻", "🤡", "💌", "💤", "👍"];
+var ROLE_CHANGED = "role_changed";
+var emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳", "😨", "😤", "🤬",
+    "☠", "👻", "🤡", "💌", "💤", "👍"];
 var MESSAGE_TYPE;
 (function (MESSAGE_TYPE) {
     MESSAGE_TYPE["TEXT"] = "text";
@@ -79,34 +79,14 @@ var Client = /** @class */ (function () {
         this.isOnlyPhoto = false;
         // Bot Master ID
         this.botMasterId = "docker"; // change this ==> eg. docker
+        this.usersMap = new Map();
+        this.user_list = [];
         // you can add more list of spins
         this.listEmojis = [
-            'You got 🐠😾',
-            'You are sweet 😍',
-            'Goodnight 🌠°',
-            'Take 🍔🍔',
-            'Are you old enough to vote?',
-            'You got 🍪',
-            'You shattap 😡🎃',
-            'You got 🎁',
-            'You found 🎅',
-            'Are you gonna help me or what?	',
-            'Your name?',
-            'You got 🎀',
-            'You got 👻',
-            'Which do you like better, white wine or red wine?',
-            'Can you drive a car? ',
-            'You are 🐊',
-            'You got 🍒 🍰 ',
-            'Dont you dare😈 😈',
-            'What did you do with my pants?	',
-            'Staying at home is boring.	',
-            'You got 🐜',
-            'You got 🎀',
-            'You won 🏆',
-            'You are 🐫',
-            'You got 💥',
-            'You got 🎉💘'
+            'You got 🐠😾', 'You are sweet 😍', 'Goodnight 🌠°', 'Take 🍔🍔', 'Are you old enough to vote?', 'You got 🍪', 'You shattap 😡🎃',
+            'You got 🎁', 'You found 🎅', 'Are you gonna help me or what?	', 'Your name?', 'You got 🎀', 'You got 👻', 'You are 🐊',
+            'Can you drive a car? ', 'You got 🍒 🍰 ', 'Dont you dare😈 😈', 'What did you do with my pants?', 'Staying at home is boring.',
+            'You got 🐜', 'You got 🎀', 'You won 🏆', 'You are 🐫', 'Which do you like better, white wine or red wine?', 'You got 💥', 'You got 🎉💘'
         ];
         this.userName = user;
         this.passWord = pass;
@@ -128,7 +108,7 @@ var Client = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             msg[_i] = arguments[_i];
         }
-        console.warn.apply(console, __spreadArrays(["[DBH4CK LOG]"], msg));
+        console.warn.apply(console, __spreadArray(["[DBH4CK LOG]"], msg));
     };
     Client.prototype._onClose = function (close) {
         //clearInterval(this);
@@ -184,7 +164,13 @@ var Client = /** @class */ (function () {
             }
             if (parsedData.type == "room_unsufficient_previlige") {
                 var room_1 = parsedData.name;
-                this.sendRoomMsg(room_1, "Unsufficient Previlige.");
+                this.sendRoomMsg(room_1, "❌ Insufficient Privileges.");
+            }
+            if (parsedData.type == ROLE_CHANGED) {
+                var room_2 = parsedData.name;
+                var userName_1 = parsedData.t_username;
+                var newRole = parsedData.new_role;
+                this.sendRoomMsg(room_2, "✅ " + userName_1 + " is now " + newRole + ".");
             }
         }
         if (parsedData.handler == HANDLER_PROFILE_OTHER) {
@@ -254,10 +240,61 @@ var Client = /** @class */ (function () {
                 }
             }
         }
+        if (parsedData.handler == HANDLER_ROOM_ADMIN) {
+            if (parsedData.type == "occupants_list") {
+                this.tempRoom = parsedData.room;
+                var msg_1 = "";
+                while (this.user_list.length > 0) {
+                    this.user_list.pop();
+                }
+                for (var i = 0; i < parsedData.occupants.length; i++) {
+                    this.user_list.push(parsedData.occupants[i].username);
+                    var suffix = "";
+                    if (i === parsedData.occupants.length - 1) { }
+                    else {
+                        suffix = "\n";
+                    }
+                    msg_1 += (i + 1) + " " + parsedData.occupants[i].username + suffix;
+                }
+                if (msg_1.length > 0) {
+                    this.sendRoomMsg(parsedData.room, msg_1);
+                }
+            }
+        }
+    };
+    Client.prototype.grantAdmin = function (targetId, roomName) {
+        var adminPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_ADMIN };
+        if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+            this.webSocket.send(JSON.stringify(adminPayload));
+        }
+    };
+    Client.prototype.grantOwner = function (targetId, roomName) {
+        var ownerPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_OWNER };
+        if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+            this.webSocket.send(JSON.stringify(ownerPayload));
+        }
+    };
+    Client.prototype.grantMember = function (targetId, roomName) {
+        var memPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_MEMBER };
+        if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+            this.webSocket.send(JSON.stringify(memPayload));
+        }
+    };
+    Client.prototype.banUser = function (targetId, roomName) {
+        var outcastPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_OUTCAST };
+        if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+            this.webSocket.send(JSON.stringify(outcastPayload));
+        }
+    };
+    Client.prototype.grantNone = function (targetId, roomName) {
+        var nonePayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_NONE };
+        if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
+            this.webSocket.send(JSON.stringify(nonePayload));
+        }
     };
     Client.prototype.processGroupChatMessage = function (from, message, room) {
         return __awaiter(this, void 0, void 0, function () {
-            var search, videos, random, search, targetId, str, targetId, str, targetId, str, targetId, memPayload, str, targetId, kickPayload, str, targetId, outcastPayload, str, targetId, nonePayload, str, targetId, adminPayload, str, targetId, ownerPayload;
+            var search, videos, msg, random, search, targetId, str, targetId, str, targetId, str, targetId, str, targetId, kickPayload, str, targetId, str, targetId, str, targetId, str, targetId, roomUsersPayload, targetIndex;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -274,6 +311,17 @@ var Client = /** @class */ (function () {
                         this.sendRoomMsg(room, videos[0].url);
                         _a.label = 2;
                     case 2:
+                        if (message.toLowerCase() == "!cmd") {
+                            msg = "➩ spin - .s" + "\n" +
+                                "➩ kick - k ID" + "\n" +
+                                "➩ ban - b ID" + "\n" +
+                                "➩ owner - o ID" + "\n" +
+                                "➩ admin - a ID" + "\n" +
+                                "➩ member - m ID" + "\n" +
+                                "➩ none - n ID" + "\n" +
+                                "➩ room users - .l";
+                            this.sendRoomMsg(room, msg);
+                        }
                         // SPIN 
                         if (message.toLowerCase() == '.s' || message.toLowerCase() == 'spin') {
                             random = Math.floor(Math.random() * this.listEmojis.length);
@@ -314,10 +362,7 @@ var Client = /** @class */ (function () {
                             targetId = str.replace(/\s/g, "");
                             this.tempRoom = room;
                             if (from == this.botMasterId) {
-                                memPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_MEMBER };
-                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-                                    this.webSocket.send(JSON.stringify(memPayload));
-                                }
+                                this.grantMember(targetId, room);
                             }
                         }
                         // Kick User
@@ -337,10 +382,7 @@ var Client = /** @class */ (function () {
                             targetId = str.replace(/\s/g, "");
                             this.tempRoom = room;
                             if (from == this.botMasterId) {
-                                outcastPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OUTCAST };
-                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-                                    this.webSocket.send(JSON.stringify(outcastPayload));
-                                }
+                                this.banUser(targetId, room);
                             }
                         }
                         if (message.indexOf('n ') === 0) {
@@ -348,10 +390,7 @@ var Client = /** @class */ (function () {
                             targetId = str.replace(/\s/g, "");
                             this.tempRoom = room;
                             if (from == this.botMasterId) {
-                                nonePayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_NONE };
-                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-                                    this.webSocket.send(JSON.stringify(nonePayload));
-                                }
+                                this.grantNone(targetId, room);
                             }
                         }
                         if (message.indexOf('a ') === 0) {
@@ -359,10 +398,7 @@ var Client = /** @class */ (function () {
                             targetId = str.replace(/\s/g, "");
                             this.tempRoom = room;
                             if (from == this.botMasterId) {
-                                adminPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_ADMIN };
-                                if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-                                    this.webSocket.send(JSON.stringify(adminPayload));
-                                }
+                                this.grantAdmin(targetId, room);
                             }
                         }
                         if (message.indexOf('o ') === 0) {
@@ -370,9 +406,48 @@ var Client = /** @class */ (function () {
                             targetId = str.replace(/\s/g, "");
                             this.tempRoom = room;
                             if (from == this.botMasterId) {
-                                ownerPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OWNER };
+                                this.grantOwner(targetId, room);
+                            }
+                        }
+                        if (message.toLowerCase() == ".l") {
+                            this.tempRoom = room;
+                            if (from == this.botMasterId) {
+                                roomUsersPayload = { handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: "occupants_list", room: room, t_username: "username", t_role: "none" };
                                 if (this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN) {
-                                    this.webSocket.send(JSON.stringify(ownerPayload));
+                                    this.webSocket.send(JSON.stringify(roomUsersPayload));
+                                }
+                            }
+                        }
+                        if (message.toLowerCase().startsWith(".a ") || message.toLowerCase().startsWith(".o ") || message.toLowerCase().startsWith(".b ") || message.toLowerCase().startsWith(".m ")
+                            || message.toLowerCase().startsWith(".n ")) {
+                            targetIndex = message.substring(3);
+                            if (this.user_list) {
+                                if (isNaN(targetIndex)) {
+                                    console.log("Invalid Input");
+                                }
+                                else {
+                                    if (targetIndex <= this.user_list.length) {
+                                        //console.log(this.user_list[targetId-1]);
+                                        if (message.toLowerCase().substring(0, 2).trim() == ".a") {
+                                            this.grantAdmin(this.user_list[targetIndex - 1], room);
+                                        }
+                                        else if (message.toLowerCase().substring(0, 2).trim() == ".o") {
+                                            this.grantOwner(this.user_list[targetIndex - 1], room);
+                                        }
+                                        else if (message.toLowerCase().substring(0, 2).trim() == ".m") {
+                                            this.grantMember(this.user_list[targetIndex - 1], room);
+                                        }
+                                        else if (message.toLowerCase().substring(0, 2).trim() == ".b") {
+                                            this.banUser(this.user_list[targetIndex - 1], room);
+                                        }
+                                        else if (message.toLowerCase().substring(0, 2).trim() == ".n") {
+                                            this.grantNone(this.user_list[targetIndex - 1], room);
+                                        }
+                                    }
+                                    else {
+                                        //console.log("Invalid Input");
+                                        this.sendRoomMsg(room, "❌ Invalid user selected!");
+                                    }
                                 }
                             }
                         }
@@ -438,6 +513,15 @@ var Client = /** @class */ (function () {
 exports.Client = Client;
 function get_random(list) {
     return list[Math.floor((Math.random() * list.length))];
+}
+function chunkSubstr(str, size) {
+    var numChunks = Math.ceil(str.length / size);
+    var chunks = new Array(numChunks);
+    for (var i = 0, o = 0; i < numChunks; ++i, o += size) {
+        chunks[i] = str.substr(o, size);
+    }
+    //console.log(chunks);
+    return chunks;
 }
 // Created by docker aka db~@NC - B'cuz we share :P
 new Client(BOT_ID, BOT_PASSWORD);

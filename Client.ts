@@ -1,8 +1,8 @@
 import WebSocket =  require('ws');
 import * as yt from 'youtube-search-without-api-key';
 
-const BOT_ID: string = "Bot Id";
-const BOT_PASSWORD: string = "Bot Pwd";
+const BOT_ID: string = "Bot Id";        // change this
+const BOT_PASSWORD: string = "Bot Pwd";     // change this
 
 const HANDLER_LOGIN: string = "login";
 const HANDLER_LOGIN_EVENT: string = "login_event";
@@ -18,9 +18,10 @@ const TARGET_ROLE_NONE: string = "none";
 const TARGET_ROLE_ADMIN: string = "admin";
 const TARGET_ROLE_OWNER: string = "owner";
 const CHANGE_ROLE: string = "change_role";
+const ROLE_CHANGED: string = "role_changed";
 
-const emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳",
- "😨", "😤", "🤬", "☠", "👻", "🤡", "💌", "💤", "👍"];
+const emojis = ["😀", "☑️", "😁", "😊", "😍", "😘", "🤪", "🤭", "🤥", "🥵", "🥳","😨", "😤", "🤬",
+"☠", "👻", "🤡", "💌", "💤", "👍"];
 
 enum MESSAGE_TYPE{
     TEXT = "text",
@@ -28,7 +29,6 @@ enum MESSAGE_TYPE{
 }
 
 export class Client{
-
     public URL: string = 'wss://chatp.net:5333/server';
     public webSocket: WebSocket = null;
     public userName: string = "";
@@ -38,37 +38,17 @@ export class Client{
     public isOnlyPhoto: boolean = false;
     // Bot Master ID
     public botMasterId: string = "docker";      // change this ==> eg. docker
-
+    public usersMap = new Map();
+    public user_list = [];
+    
     // you can add more list of spins
     public listEmojis = [
-        'You got 🐠😾',
-        'You are sweet 😍',
-        'Goodnight 🌠°',
-        'Take 🍔🍔',
-        'Are you old enough to vote?',
-        'You got 🍪',
-        'You shattap 😡🎃',
-        'You got 🎁',
-        'You found 🎅',
-        'Are you gonna help me or what?	',
-        'Your name?',
-        'You got 🎀',
-        'You got 👻',
-        'Which do you like better, white wine or red wine?',
-        'Can you drive a car? ',
-        'You are 🐊',
-        'You got 🍒 🍰 ',
-        'Dont you dare😈 😈',
-        'What did you do with my pants?	',
-        'Staying at home is boring.	',
-        'You got 🐜',
-        'You got 🎀',
-        'You won 🏆',
-        'You are 🐫',
-        'You got 💥',
-        'You got 🎉💘'
+        'You got 🐠😾', 'You are sweet 😍', 'Goodnight 🌠°', 'Take 🍔🍔', 'Are you old enough to vote?', 'You got 🍪','You shattap 😡🎃',
+        'You got 🎁','You found 🎅','Are you gonna help me or what?	','Your name?','You got 🎀','You got 👻','You are 🐊',
+        'Can you drive a car? ','You got 🍒 🍰 ','Dont you dare😈 😈','What did you do with my pants?','Staying at home is boring.',
+        'You got 🐜','You got 🎀','You won 🏆','You are 🐫', 'Which do you like better, white wine or red wine?','You got 💥','You got 🎉💘'
     ];
-    
+
     constructor(user: string, pass: string){
         this.userName = user;
         this.passWord = pass;
@@ -152,7 +132,13 @@ export class Client{
             }
             if(parsedData.type == "room_unsufficient_previlige"){
                 let room = parsedData.name;
-                this.sendRoomMsg(room, "Unsufficient Previlige.");
+                this.sendRoomMsg(room, "❌ Insufficient Privileges.");
+            }
+            if(parsedData.type == ROLE_CHANGED){
+                let room = parsedData.name;
+                let userName = parsedData.t_username;
+                let newRole = parsedData.new_role;
+                this.sendRoomMsg(room, "✅ " + userName + " is now " + newRole + ".");
             }
         }
 
@@ -217,6 +203,66 @@ export class Client{
                 }
             }
         }
+
+        if(parsedData.handler == HANDLER_ROOM_ADMIN){
+            if(parsedData.type == "occupants_list"){
+                this.tempRoom = parsedData.room;
+                let msg = "";
+                
+                while (this.user_list.length > 0) {
+                    this.user_list.pop();
+                } 
+
+                for(let i = 0; i < parsedData.occupants.length; i++){
+                    this.user_list.push(parsedData.occupants[i].username);
+                    var suffix = "";
+                    if(i === parsedData.occupants.length-1){}
+                    else{
+                        suffix = "\n";
+                    }
+                    msg += (i+1) + " " + parsedData.occupants[i].username + suffix;
+                }
+                if(msg.length > 0){
+                    this.sendRoomMsg(parsedData.room, msg);
+                }
+            }
+        }
+    }
+
+
+    public grantAdmin(targetId: string, roomName: string){
+        var adminPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_ADMIN};
+        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+            this.webSocket.send(JSON.stringify(adminPayload));
+        }
+    }
+
+    public grantOwner(targetId: string, roomName: string){
+        var ownerPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_OWNER};
+        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+            this.webSocket.send(JSON.stringify(ownerPayload));
+        }
+    }
+
+    public grantMember(targetId: string, roomName: string){
+        var memPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_MEMBER};
+        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+            this.webSocket.send(JSON.stringify(memPayload));
+        }
+    }
+
+    public banUser(targetId: string, roomName: string){
+        var outcastPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_OUTCAST};
+        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+            this.webSocket.send(JSON.stringify(outcastPayload));
+        }
+    }
+
+    public grantNone(targetId: string, roomName: string){
+        var nonePayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: roomName, t_username: targetId, t_role: TARGET_ROLE_NONE};
+        if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
+            this.webSocket.send(JSON.stringify(nonePayload));
+        }
     }
 
     public async processGroupChatMessage(from, message, room){
@@ -226,13 +272,25 @@ export class Client{
             
         }
         // Youtube Scrapping :D
-        if (message.indexOf('!yt ') === 0){
+        if(message.indexOf('!yt ') === 0){
             var search = message.substring(4).toString();
             console.log('Fetching YT for: "' + search.replace(/\s/g, "") + '"');
 
             const videos = await yt.search(search.replace(/\s/g, ""));
             console.log(videos[0].url);
             this.sendRoomMsg(room, videos[0].url);
+        }
+
+        if(message.toLowerCase() == "!cmd"){
+            let msg =   "➩ spin - .s" + "\n" +
+                        "➩ kick - k ID" + "\n" + 
+                        "➩ ban - b ID" + "\n" +
+                        "➩ owner - o ID" + "\n" +
+                        "➩ admin - a ID" + "\n" +
+                        "➩ member - m ID" + "\n" +
+                        "➩ none - n ID" + "\n" +
+                        "➩ room users - .l";
+            this.sendRoomMsg(room, msg);
         }
 
         // SPIN 
@@ -243,7 +301,6 @@ export class Client{
 
         // Profile
         if(message.indexOf('!pro ') === 0){
-            
             var search = message.substring(5).toString();
             var targetId = search.replace(/\s/g, "");
             this.tempRoom = room;
@@ -283,10 +340,7 @@ export class Client{
             this.tempRoom = room;
 
             if(from == this.botMasterId){
-                var memPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_MEMBER};
-                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-                    this.webSocket.send(JSON.stringify(memPayload));
-                }
+                this.grantMember(targetId, room);
             }
         }
 
@@ -310,10 +364,7 @@ export class Client{
             this.tempRoom = room;
 
             if(from == this.botMasterId){
-                var outcastPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OUTCAST};
-                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-                    this.webSocket.send(JSON.stringify(outcastPayload));
-                }
+                this.banUser(targetId, room);
             }
         }
 
@@ -323,10 +374,7 @@ export class Client{
             this.tempRoom = room;
 
             if(from == this.botMasterId){
-                var nonePayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_NONE};
-                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-                    this.webSocket.send(JSON.stringify(nonePayload));
-                }
+                this.grantNone(targetId, room);
             }
         }
 
@@ -336,10 +384,7 @@ export class Client{
             this.tempRoom = room;
 
             if(from == this.botMasterId){
-                var adminPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_ADMIN};
-                if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-                    this.webSocket.send(JSON.stringify(adminPayload));
-                }
+                this.grantAdmin(targetId, room);
             }
         }
 
@@ -349,13 +394,54 @@ export class Client{
             this.tempRoom = room;
 
             if(from == this.botMasterId){
-                var ownerPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: CHANGE_ROLE, room: room, t_username: targetId, t_role: TARGET_ROLE_OWNER};
+                this.grantOwner(targetId, room);
+            }
+        }
+
+        if(message.toLowerCase() == ".l"){
+            this.tempRoom = room;
+            
+            if(from == this.botMasterId){
+                var roomUsersPayload = {handler: HANDLER_ROOM_ADMIN, id: this.keyGen(20, true), type: "occupants_list", room: room, t_username: "username", t_role: "none"};
                 if(this.webSocket != null && this.webSocket.readyState == WebSocket.OPEN){
-                    this.webSocket.send(JSON.stringify(ownerPayload));
+                    this.webSocket.send(JSON.stringify(roomUsersPayload));
                 }
             }
         }
-        
+
+        if(message.toLowerCase().startsWith(".a ") || message.toLowerCase().startsWith(".o ") || message.toLowerCase().startsWith(".b ") || message.toLowerCase().startsWith(".m ") 
+            || message.toLowerCase().startsWith(".n ")){
+            
+            var targetIndex = message.substring(3);
+            if(this.user_list){
+                if(isNaN(targetIndex)){
+                    console.log("Invalid Input");
+                }
+                else{
+                    if(targetIndex <= this.user_list.length){
+                        //console.log(this.user_list[targetId-1]);
+                        if(message.toLowerCase().substring(0, 2).trim() == ".a"){
+                            this.grantAdmin(this.user_list[targetIndex-1], room);
+                        }
+                        else if(message.toLowerCase().substring(0, 2).trim() == ".o"){
+                            this.grantOwner(this.user_list[targetIndex-1], room);
+                        }
+                        else if(message.toLowerCase().substring(0, 2).trim() == ".m"){
+                            this.grantMember(this.user_list[targetIndex-1], room);
+                        }
+                        else if(message.toLowerCase().substring(0, 2).trim() == ".b"){
+                            this.banUser(this.user_list[targetIndex-1], room);
+                        }
+                        else if(message.toLowerCase().substring(0, 2).trim() == ".n"){
+                            this.grantNone(this.user_list[targetIndex-1], room);
+                        }
+                    }else{
+                        //console.log("Invalid Input");
+                        this.sendRoomMsg(room, "❌ Invalid user selected!");
+                    }
+                }
+            }
+        }
     }
 
 
@@ -427,6 +513,18 @@ export class Client{
 
 function get_random (list) {
     return list[Math.floor((Math.random()*list.length))];
+}
+
+function chunkSubstr(str, size) {
+    const numChunks = Math.ceil(str.length / size)
+    const chunks = new Array(numChunks)
+  
+    for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+      chunks[i] = str.substr(o, size)
+    }
+    //console.log(chunks);
+    return chunks
   }
+
 // Created by docker aka db~@NC - B'cuz we share :P
 new Client(BOT_ID, BOT_PASSWORD);
