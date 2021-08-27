@@ -44,8 +44,8 @@ exports.__esModule = true;
 exports.Client = void 0;
 var WebSocket = require("ws");
 var yt = require("youtube-search-without-api-key");
-var BOT_ID = "Bot Id"; // change this
-var BOT_PASSWORD = "Bot Pwd"; // change this
+var BOT_ID = "newflood1"; // change this
+var BOT_PASSWORD = "khan00"; // change this
 var HANDLER_LOGIN = "login";
 var HANDLER_LOGIN_EVENT = "login_event";
 var HANDLER_ROOM_JOIN = "room_join";
@@ -74,11 +74,11 @@ var Client = /** @class */ (function () {
         this.webSocket = null;
         this.userName = "";
         this.passWord = "";
-        this.roomName = "american"; // change this ==> eg. american
+        this.roomName = "smile"; // change this ==> eg. american
         this.tempRoom = "";
         this.isOnlyPhoto = false;
         // Bot Master ID
-        this.botMasterId = "docker"; // change this ==> eg. docker
+        this.botMasterId = "dj"; // change this ==> eg. docker
         this.usersMap = new Map();
         this.user_list = [];
         // you can add more list of spins
