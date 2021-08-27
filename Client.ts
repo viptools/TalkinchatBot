@@ -1,15 +1,15 @@
 import WebSocket =  require('ws');
 import * as yt from 'youtube-search-without-api-key';
 
-const BOT_ID: string = "Bot Id";        // change this
-const BOT_PASSWORD: string = "Bot Pwd";     // change this
+const BOT_ID: string = "newglood1";        // change this
+const BOT_PASSWORD: string = "khan00";     // change this
 
 const HANDLER_LOGIN: string = "login";
 const HANDLER_LOGIN_EVENT: string = "login_event";
 const HANDLER_ROOM_JOIN: string = "room_join";
 const HANDLER_ROOM_EVENT: string = "room_event";
 const HANDLER_ROOM_ADMIN: string = "room_admin";
-const HANDLER_ROOM_MESSAGE: string = "room_message";
+const HANDLER_ROOM_MESSAG: string = "room_message";
 const HANDLER_PROFILE_OTHER: string = "profile_other";
 const TARGET_ROLE_MEMBER: string = "member";
 const TARGET_ROLE_KICK: string = "kick";
