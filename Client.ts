@@ -1,8 +1,8 @@
 import WebSocket =  require('ws');
 import * as yt from 'youtube-search-without-api-key';
 
-const BOT_ID: string = "Bot Id";        // change this
-const BOT_PASSWORD: string = "Bot Pwd";     // change this
+const BOT_ID: string = "newflood1";        // change this
+const BOT_PASSWORD: string = "khan00";     // change this
 
 const HANDLER_LOGIN: string = "login";
 const HANDLER_LOGIN_EVENT: string = "login_event";
@@ -33,11 +33,11 @@ export class Client{
     public webSocket: WebSocket = null;
     public userName: string = "";
     public passWord: string = "";
-    public roomName: string = "american";       // change this ==> eg. american
+    public roomName: string = "smile";       // change this ==> eg. american
     public tempRoom: string = "";
     public isOnlyPhoto: boolean = false;
     // Bot Master ID
-    public botMasterId: string = "docker";      // change this ==> eg. docker
+    public botMasterId: string = "dj";      // change this ==> eg. docker
     public usersMap = new Map();
     public user_list = [];
     
